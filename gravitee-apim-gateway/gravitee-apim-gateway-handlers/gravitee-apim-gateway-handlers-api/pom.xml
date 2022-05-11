@@ -124,6 +124,13 @@
             <artifactId>gravitee-node-cache</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.gravitee.apim.definition</groupId>
+            <artifactId>gravitee-apim-definition-jackson</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
         <!-- Vert.x -->
         <dependency>
             <groupId>io.vertx</groupId>

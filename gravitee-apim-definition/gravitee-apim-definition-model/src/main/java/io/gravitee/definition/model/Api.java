@@ -45,6 +45,9 @@ public class Api implements Serializable {
     @JsonProperty("gravitee")
     private DefinitionVersion definitionVersion;
 
+    @JsonProperty(value = "definition_context")
+    private DefinitionContext definitionContext;
+
     @JsonProperty("proxy")
     private Proxy proxy;
 
@@ -206,6 +209,14 @@ public class Api implements Serializable {
         for (Plan plan : plans) {
             this.plans.put(plan.getId(), plan);
         }
+    }
+
+    public DefinitionContext getDefinitionContext() {
+        return definitionContext;
+    }
+
+    public void setDefinitionContext(DefinitionContext definitionContext) {
+        this.definitionContext = definitionContext;
     }
 
     @Override

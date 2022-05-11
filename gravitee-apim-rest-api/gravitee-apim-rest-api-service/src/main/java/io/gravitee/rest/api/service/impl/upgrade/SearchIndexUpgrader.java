@@ -137,7 +137,14 @@ public class SearchIndexUpgrader implements Upgrader, Ordered {
     }
 
     private List<CompletableFuture<?>> runApisIndexationAsync(ExecutorService executorService) throws TechnicalException {
-        return apiRepository.findAll().stream().map(api -> runApiIndexationAsync(executorService, api)).collect(toList());
+        return apiRepository
+            .findAll()
+            .stream()
+            // TODO: Quick win: api created from K8S are marked STOPPED when deleted. We just exclude them from the search index for now.
+            // This must be better handled with an higher concept such as 'archiving' or something close.
+            // .filter(api -> !DefinitionContext.isKubernetes(api.getDefinitionContext()) || api.getState() != Lifecycle.State.STOPPED)
+            .map(api -> runApiIndexationAsync(executorService, api))
+            .collect(toList());
     }
 
     private CompletableFuture<?> runApiIndexationAsync(ExecutorService executorService, Api api) {

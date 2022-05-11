@@ -100,6 +100,10 @@ public class ApiEntity implements Indexable {
     @Schema(description = "API's gravitee definition version")
     private String graviteeDefinitionVersion;
 
+    @JsonProperty(value = "definition_context")
+    @Schema(description = "the context where the api definition was created from")
+    private DefinitionContext definitionContext;
+
     @JsonProperty("deployed_at")
     @Schema(description = "The last date (as timestamp) when the API was deployed.", example = "1581256457163")
     private Date deployedAt;
@@ -592,5 +596,13 @@ public class ApiEntity implements Indexable {
             flowMode +
             '}'
         );
+    }
+
+    public DefinitionContext getDefinitionContext() {
+        return definitionContext;
+    }
+
+    public void setDefinitionContext(DefinitionContext definitionContext) {
+        this.definitionContext = definitionContext;
     }
 }
