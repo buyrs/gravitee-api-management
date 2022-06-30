@@ -59,6 +59,8 @@ import io.gravitee.gateway.policy.impl.CachedPolicyConfigurationFactory;
 import io.gravitee.gateway.reactor.handler.ReactorHandler;
 import io.gravitee.gateway.reactor.handler.ReactorHandlerFactory;
 import io.gravitee.gateway.reactor.handler.context.ApiTemplateVariableProviderFactory;
+import io.gravitee.gateway.reactor.handler.context.DefaultV3ExecutionContextFactory;
+import io.gravitee.gateway.reactor.handler.context.V3ExecutionContextFactory;
 import io.gravitee.gateway.resource.ResourceConfigurationFactory;
 import io.gravitee.gateway.resource.ResourceLifecycleManager;
 import io.gravitee.gateway.resource.internal.ResourceConfigurationFactoryImpl;
@@ -320,23 +322,12 @@ public class ApiReactorHandlerFactory implements ReactorHandlerFactory<Api> {
         );
     }
 
-    protected io.gravitee.gateway.reactor.handler.context.ExecutionContextFactory v3ExecutionContextFactory(
+    protected V3ExecutionContextFactory v3ExecutionContextFactory(
         Api api,
         ComponentProvider componentProvider,
         DefaultReferenceRegister referenceRegister
     ) {
-        final io.gravitee.gateway.reactor.handler.context.ExecutionContextFactory executionContextFactory = new io.gravitee.gateway.reactor.handler.context.ExecutionContextFactory(
-            componentProvider
-        );
-
-        executionContextFactory.addTemplateVariableProvider(new ApiTemplateVariableProvider(api));
-        executionContextFactory.addTemplateVariableProvider(referenceRegister);
-        applicationContext
-            .getBean(ApiTemplateVariableProviderFactory.class)
-            .getTemplateVariableProviders()
-            .forEach(executionContextFactory::addTemplateVariableProvider);
-
-        return executionContextFactory;
+        return new DefaultV3ExecutionContextFactory(componentProvider, templateVariableProviders(api, referenceRegister));
     }
 
     protected List<TemplateVariableProvider> templateVariableProviders(Api api, DefaultReferenceRegister referenceRegister) {
@@ -347,7 +338,6 @@ public class ApiReactorHandlerFactory implements ReactorHandlerFactory<Api> {
         templateVariableProviders.addAll(
             applicationContext.getBean(ApiTemplateVariableProviderFactory.class).getTemplateVariableProviders()
         );
-
         return templateVariableProviders;
     }
 
