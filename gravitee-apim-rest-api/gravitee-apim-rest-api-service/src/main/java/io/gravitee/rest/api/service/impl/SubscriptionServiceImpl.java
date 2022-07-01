@@ -548,6 +548,15 @@ public class SubscriptionServiceImpl extends AbstractService implements Subscrip
                 subscription.setClosedAt(new Date());
             }
 
+            if (
+                plan.getSecurity() == API_KEY &&
+                subscription.getStatus() == Subscription.Status.ACCEPTED &&
+                StringUtils.isNotEmpty(processSubscription.getCustomApiKey()) &&
+                !apiKeyService.canCreate(processSubscription.getCustomApiKey(), plan.getApi(), subscription.getApplication())
+            ) {
+                throw new ApiKeyAlreadyActivatedException();
+            }
+
             subscription = subscriptionRepository.update(subscription);
 
             final String apiId = plan.getApi();

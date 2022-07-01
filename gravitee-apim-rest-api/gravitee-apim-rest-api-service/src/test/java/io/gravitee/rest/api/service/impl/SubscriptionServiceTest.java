@@ -717,6 +717,40 @@ public class SubscriptionServiceTest {
     }
 
     @Test
+    public void shouldThrowApiKeyAlreadyActivatedException() throws Exception {
+        // Prepare data
+        final String customApiKey = "customApiKey";
+
+        ProcessSubscriptionEntity processSubscription = new ProcessSubscriptionEntity();
+        processSubscription.setId(SUBSCRIPTION_ID);
+        processSubscription.setAccepted(true);
+        processSubscription.setCustomApiKey(customApiKey);
+
+        Subscription subscription = new Subscription();
+        subscription.setApplication(APPLICATION_ID);
+        subscription.setPlan(PLAN_ID);
+        subscription.setStatus(Subscription.Status.PENDING);
+        subscription.setSubscribedBy(SUBSCRIBER_ID);
+
+        when(plan.getSecurity()).thenReturn(PlanSecurityType.API_KEY);
+
+        // Stub
+        when(subscriptionRepository.findById(SUBSCRIPTION_ID)).thenReturn(Optional.of(subscription));
+        when(planService.findById(PLAN_ID)).thenReturn(plan);
+
+        // Run
+        final ApiKeyAlreadyActivatedException exception = assertThrows(
+            ApiKeyAlreadyActivatedException.class,
+            () -> subscriptionService.process(processSubscription, USER_ID)
+        );
+
+        verify(subscriptionRepository, times(0)).update(any());
+        verifyNoInteractions(applicationService);
+        verify(planService).findById(PLAN_ID);
+        assertEquals("API key is already activated", exception.getMessage());
+    }
+
+    @Test
     public void shouldProcessButReject() throws Exception {
         // Prepare data
         ProcessSubscriptionEntity processSubscription = new ProcessSubscriptionEntity();
@@ -808,6 +842,7 @@ public class SubscriptionServiceTest {
         final UserEntity subscriberUser = new UserEntity();
         subscriberUser.setEmail(SUBSCRIBER_ID + "@acme.net");
         when(userService.findById(SUBSCRIBER_ID)).thenReturn(subscriberUser);
+        when(apiKeyService.canCreate(customApiKey, API_ID, APPLICATION_ID)).thenReturn(true);
 
         // Run
         final SubscriptionEntity subscriptionEntity = subscriptionService.process(processSubscription, USER_ID);
