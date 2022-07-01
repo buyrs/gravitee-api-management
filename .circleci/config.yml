@@ -1252,6 +1252,9 @@ jobs:
         machine:
             image: ubuntu-2004:202101-01
         resource_class: large
+        parameters:
+            execution_mode:
+                type: string
         steps:
             - checkout
             - attach_workspace:
@@ -1265,11 +1268,25 @@ jobs:
                   secret-url: keeper://TIlcGPFq4rN5GvgnZb9hng/field/password
                   var-name: GITHUB_TOKEN
             - run:
-                  name: Run API & e2e tests
+                  name: Run API & E2E Tests
                   command: |
+                      echo "Running API & E2E tests in ${GRAVITEE_EXECUTION_MODE} mode"
                       cd gravitee-apim-e2e
+                      if [[ ${GRAVITEE_EXECUTION_MODE} == jupiter ]]
+                      then
+                        echo "Enabling jupiter mode on APIM Gateway and Rest API"
+                        export JUPITER_MODE_ENABLED=true
+                      fi
                       APIM_REGISTRY=graviteeio.azurecr.io APIM_TAG=$APIM_VERSION npm run test:api
-                      npm run test:report
+                  environment:
+                      - GRAVITEE_EXECUTION_MODE: << parameters.execution_mode >>
+            - run:
+                  name: Generate Coverage Report
+                  command: |
+                    cd gravitee-apim-e2e
+                    npm run test:report
+                  environment:
+                      -   GRAVITEE_EXECUTION_MODE: << parameters.execution_mode >>
             - run:
                   name: Remove Report Details (Only keep index files)
                   command: |
@@ -1277,10 +1294,10 @@ jobs:
                       rm -f report.xml
                       find . -type f -not -name 'index.html' -name '*.html' -delete
             - store_artifacts:
-                  name: Upload jacoco report
+                  name: Upload Jacoco Report
                   path: gravitee-apim-e2e/jacoco/reports
             - store_artifacts:
-                  name: Upload jacoco exec file
+                  name: Upload Jacoco Execution File
                   path: gravitee-apim-e2e/jacoco/jacoco.exec
             - gh/setup
             - run:
@@ -1687,10 +1704,13 @@ workflows:
                       - setup
             - e2e-test:
                   context: cicd-orchestrator
-                  name: Test APIM e2e
+                  name: Test APIM e2e - << matrix.execution_mode >>
                   requires:
                       - Lint & Build APIM e2e
                       - build-images
+                  matrix:
+                      parameters:
+                          execution_mode: ["v3", "jupiter"]
                   filters:
                       branches:
                           only:
