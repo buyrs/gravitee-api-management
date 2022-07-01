@@ -509,6 +509,17 @@ public class SubscriptionServiceImpl extends AbstractService implements Subscrip
                 subscription.setClosedAt(new Date());
             }
 
+            if (planEntity.getSecurity() == PlanSecurityType.API_KEY && subscription.getStatus() == Subscription.Status.ACCEPTED) {
+                if (StringUtils.isNotEmpty(processSubscription.getCustomApiKey())) {
+                    if (apiKeyService.exists(processSubscription.getCustomApiKey())) {
+                        throw new ApiKeyAlreadyActivatedException("The API key is already activated");
+                    }
+                    apiKeyService.generate(subscription.getId(), processSubscription.getCustomApiKey());
+                } else {
+                    apiKeyService.generate(subscription.getId());
+                }
+            }
+
             subscription = subscriptionRepository.update(subscription);
 
             final ApplicationEntity application = applicationService.findById(
@@ -573,17 +584,6 @@ public class SubscriptionServiceImpl extends AbstractService implements Subscrip
                             }
                         }
                     );
-            }
-
-            if (plan.getSecurity() == PlanSecurityType.API_KEY && subscription.getStatus() == Subscription.Status.ACCEPTED) {
-                if (StringUtils.isNotEmpty(processSubscription.getCustomApiKey())) {
-                    if (apiKeyService.exists(processSubscription.getCustomApiKey())) {
-                        throw new ApiKeyAlreadyActivatedException("The API key is already activated");
-                    }
-                    apiKeyService.generate(subscription.getId(), processSubscription.getCustomApiKey());
-                } else {
-                    apiKeyService.generate(subscription.getId());
-                }
             }
 
             return subscriptionEntity;

@@ -21,6 +21,7 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -955,7 +956,7 @@ public class SubscriptionServiceTest {
         assertNotNull(subscriptionEntity.getProcessedAt());
     }
 
-    @Test(expected = ApiKeyAlreadyActivatedException.class)
+    @Test
     public void shouldProcessWithExistingCustomApiKeyForAcceptedSubscription() throws Exception {
         // Prepare data
         final String customApiKey = "customApiKey";
@@ -971,7 +972,6 @@ public class SubscriptionServiceTest {
         subscription.setStatus(Subscription.Status.PENDING);
         subscription.setSubscribedBy(SUBSCRIBER_ID);
 
-        when(plan.getApi()).thenReturn(API_ID);
         when(plan.getSecurity()).thenReturn(PlanSecurityType.API_KEY);
 
         when(apiKeyService.exists(customApiKey)).thenReturn(true);
@@ -979,14 +979,17 @@ public class SubscriptionServiceTest {
         // Stub
         when(subscriptionRepository.findById(SUBSCRIPTION_ID)).thenReturn(Optional.of(subscription));
         when(planService.findById(PLAN_ID)).thenReturn(plan);
-        when(applicationService.findById(GraviteeContext.getCurrentEnvironment(), APPLICATION_ID)).thenReturn(application);
-        when(subscriptionRepository.update(any())).thenAnswer(returnsFirstArg());
-        final UserEntity subscriberUser = new UserEntity();
-        subscriberUser.setEmail(SUBSCRIBER_ID + "@acme.net");
-        when(userService.findById(SUBSCRIBER_ID)).thenReturn(subscriberUser);
 
         // Run
-        final SubscriptionEntity subscriptionEntity = subscriptionService.process(processSubscription, USER_ID);
+        final ApiKeyAlreadyActivatedException exception = assertThrows(
+            ApiKeyAlreadyActivatedException.class,
+            () -> subscriptionService.process(processSubscription, USER_ID)
+        );
+
+        verify(subscriptionRepository, times(0)).update(any());
+        verifyNoInteractions(applicationService);
+        verify(planService).findById(PLAN_ID);
+        assertEquals("The API key is already activated", exception.getMessage());
     }
 
     @Test(expected = PlanAlreadyClosedException.class)
